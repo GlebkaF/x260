@@ -27,6 +27,13 @@
       when: netdata_conf.stat.exists
       notify: restart netdata
 
+    - name: Deploy overview dashboard (basic metrics in one page)
+      ansible.builtin.copy:
+        src: overview.html
+        dest: /usr/share/netdata/web/overview.html
+        mode: "0644"
+      when: netdata_conf.stat.exists
+
   handlers:
     - name: restart netdata
       ansible.builtin.systemd:

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>x260 — Overview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+    h1 { font-size: 1.25rem; margin: 0 0 1rem; font-weight: 600; }
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; max-width: 900px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; }
+    .card h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8b949e; margin: 0 0 0.5rem; font-weight: 600; }
+    .card .value { font-size: 1.5rem; font-weight: 600; }
+    .card .sub { font-size: 0.75rem; color: #8b949e; margin-top: 0.25rem; }
+    .foot { margin-top: 1rem; font-size: 0.75rem; color: #8b949e; }
+  </style>
+</head>
+<body>
+  <h1>x260 Overview</h1>
+  <div class="grid" id="cards"></div>
+  <p class="foot">Data from Netdata · <a href="/">Full dashboard</a> · <span id="updated">—</span></p>
+  <script>
+    const charts = [
+      { id: 'cpu', chart: 'system.cpu', label: 'CPU', unit: '%', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const labels = d.labels || []; const idx = (n) => labels.indexOf(n);
+        const user = row[idx('user')] ?? 0, system = row[idx('system')] ?? 0;
+        return (user + system).toFixed(1);
+      }},
+      { id: 'load', chart: 'system.load', label: 'Load (1m)', unit: '', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const i = (d.labels || []).indexOf('load1');
+        return i >= 0 && row[i] != null ? row[i].toFixed(2) : null;
+      }},
+      { id: 'ram', chart: 'system.ram', label: 'RAM', unit: '%', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const labels = d.labels || []; const idx = (n) => labels.indexOf(n);
+        const free = row[idx('free')] ?? 0, used = row[idx('used')] ?? 0, cached = row[idx('cached')] ?? 0, buffers = row[idx('buffers')] ?? 0;
+        const total = free + used + cached + buffers; if (total <= 0) return null;
+        return ((used / total) * 100).toFixed(1);
+      }, sub: (d) => {
+        const row = d.data?.[0]; if (!row) return ''; const labels = d.labels || []; const idx = (n) => labels.indexOf(n);
+        const used = (row[idx('used')] ?? 0).toFixed(0); const total = ((row[idx('free')] ?? 0) + (row[idx('used')] ?? 0) + (row[idx('cached')] ?? 0) + (row[idx('buffers')] ?? 0)).toFixed(0);
+        return used + ' / ' + total + ' MiB';
+      }},
+      { id: 'disk', chart: 'disk_space./', label: 'Disk /', unit: '%', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const labels = d.labels || []; const idx = (n) => labels.indexOf(n);
+        const used = row[idx('used')] ?? 0, avail = row[idx('avail')] ?? 0; const total = used + avail;
+        return total > 0 ? ((used / total) * 100).toFixed(1) : null;
+      }, sub: (d) => {
+        const row = d.data?.[0]; if (!row) return ''; const labels = d.labels || []; const idx = (n) => labels.indexOf(n);
+        const used = (row[idx('used')] ?? 0).toFixed(1), avail = (row[idx('avail')] ?? 0).toFixed(1);
+        return used + ' / ' + avail + ' GiB';
+      }},
+      { id: 'net_in', chart: 'system.net', label: 'Net In', unit: '', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const i = (d.labels || []).indexOf('InOctets');
+        return i >= 0 && row[i] != null ? fmtBytes(row[i]) : null;
+      }, sub: () => 'per period' },
+      { id: 'net_out', chart: 'system.net', label: 'Net Out', unit: '', fn: (d) => {
+        const row = d.data?.[0]; if (!row) return null;
+        const i = (d.labels || []).indexOf('OutOctets');
+        return i >= 0 && row[i] != null ? fmtBytes(row[i]) : null;
+      }, sub: () => 'per period' }
+    ];
+    function fmtBytes(b) { if (b >= 1e9) return (b/1e9).toFixed(2)+' GB'; if (b >= 1e6) return (b/1e6).toFixed(2)+' MB'; if (b >= 1e3) return (b/1e3).toFixed(2)+' KB'; return b+' B'; }
+    async function fetchChart(name, points = 3) {
+      const r = await fetch('/api/v1/data?chart=' + encodeURIComponent(name) + '&points=' + points);
+      if (!r.ok) return null; return r.json();
+    }
+    function render() {
+      Promise.all(charts.map(async (c) => ({ ...c, raw: await fetchChart(c.chart) }))).then((results) => {
+        const wrap = document.getElementById('cards'); wrap.innerHTML = '';
+        results.forEach((c) => {
+          const val = c.raw ? c.fn(c.raw) : null; const sub = c.raw && c.sub ? c.sub(c.raw) : '';
+          const card = document.createElement('div'); card.className = 'card';
+          card.innerHTML = '<h2>' + c.label + '</h2><div class="value">' + (val != null ? val + (c.unit || '') : '—') + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '');
+          wrap.appendChild(card);
+        });
+        document.getElementById('updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      });
+    }
+    render(); setInterval(render, 3000);
+  </script>
+</body>
+</html>

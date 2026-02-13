@@ -20,7 +20,7 @@ So the “control center” lives in this repo; you operate it **from the server
 
 On this server the repo is at **`/opt/x260`** (git clone there; not in home dir).
 
-**Monitoring:** Netdata dashboard → **http://192.168.0.118:19999** (open in browser on LAN). Install once: `curl -sS https://get.netdata.cloud/kickstart.sh | bash -s -- --dont-wait`, then `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml` to allow LAN access.
+**Monitoring:** Netdata → **http://192.168.0.118:19999** (full UI). **Basic overview** (CPU, RAM, disk, load, network) → **http://192.168.0.118:19999/overview.html**. Install once: `curl -sS https://get.netdata.cloud/kickstart.sh | bash -s -- --dont-wait`, then `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml`.
 
 ## Repo layout
 
