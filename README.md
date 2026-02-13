@@ -54,6 +54,8 @@ This repo is meant to be **public**. Never commit:
 
 Use `.env` or Ansible Vault only on the server; keep them out of the repo (`.gitignore` already excludes them).
 
+**IP 192.168.0.118** — private (RFC 1918), not routable from the internet; safe to keep in the repo. To avoid exposing it at all, put `X260_HOST` and `X260_USER` in `.env` (see `.env.example`) and use scripts that read from env.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

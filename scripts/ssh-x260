@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # SSH into x260 home server.
 # Usage: ./scripts/ssh-x260 [optional ssh args]
+# Override via .env: X260_HOST, X260_USER (see .env.example)
 
 set -e
-exec ssh gleb@192.168.0.118 "$@"
+cd "$(dirname "$0")/.."
+if [ -f .env ]; then source .env; fi
+exec ssh "${X260_USER:-gleb}@${X260_HOST:-192.168.0.118}" "$@"
