@@ -20,7 +20,7 @@ So the “control center” lives in this repo; you operate it **from the server
 
 On this server the repo is at **`/opt/x260`** (git clone there; not in home dir).
 
-**Monitoring:** Netdata → **http://192.168.0.118:19999** (full UI). **Basic overview** (CPU, RAM, disk, load, network) → **http://192.168.0.118:19999/overview.html**. Install once: `curl -sS https://get.netdata.cloud/kickstart.sh | bash -s -- --dont-wait`, then `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml`.
+**Monitoring:** Glances (CPU, RAM, disk, network, processes) → **http://192.168.0.118:61208**. Run once: `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml`.
 
 ## Repo layout
 
@@ -38,7 +38,7 @@ On this server the repo is at **`/opt/x260`** (git clone there; not in home dir)
 From `/opt/x260`:
 
 - **Ansible** (optional): install once if you use playbooks (`sudo apt install -y ansible`), then run e.g. `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/base.yml` for base setup.
-- **Monitoring:** `playbooks/monitoring.yml` — deploys Netdata web config (LAN access). See Monitoring above.
+- **Monitoring:** `playbooks/monitoring.yml` — installs Glances and enables web UI on :61208. See Monitoring above.
 - **Scripts**: run from `/opt/x260/scripts` as needed.
 
 ## Security (public repo)

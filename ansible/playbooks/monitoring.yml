@@ -1,41 +1,25 @@
 ---
-# Netdata: web dashboard for server monitoring.
-# Install Netdata first (once): curl -sS https://get.netdata.cloud/kickstart.sh | bash -s -- --dont-wait
-# Then run: ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml
+# Glances: lightweight web UI for basic server metrics (CPU, RAM, disk, network).
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml
 
-- name: Netdata monitoring
+- name: Glances monitoring
   hosts: x260_servers
   become: true
   tasks:
-    - name: Check if Netdata is installed
-      ansible.builtin.stat:
-        path: /etc/netdata/netdata.conf
-      register: netdata_conf
+    - name: Install Glances
+      ansible.builtin.apt:
+        name: glances
+        state: present
 
-    - name: Ensure Netdata config directory exists
-      ansible.builtin.file:
-        path: /etc/netdata/netdata.conf.d
-        state: directory
-        mode: "0755"
-      when: netdata_conf.stat.exists
-
-    - name: Deploy Netdata web bind config (LAN access on :19999)
+    - name: Deploy Glances web systemd unit
       ansible.builtin.copy:
-        src: netdata-web-bind.conf
-        dest: /etc/netdata/netdata.conf.d/50-web-bind.conf
+        src: glances-web.service
+        dest: /etc/systemd/system/glances-web.service
         mode: "0644"
-      when: netdata_conf.stat.exists
-      notify: restart netdata
 
-    - name: Deploy overview dashboard (basic metrics in one page)
-      ansible.builtin.copy:
-        src: overview.html
-        dest: /usr/share/netdata/web/overview.html
-        mode: "0644"
-      when: netdata_conf.stat.exists
-
-  handlers:
-    - name: restart netdata
+    - name: Enable and start Glances web
       ansible.builtin.systemd:
-        name: netdata
-        state: restarted
+        name: glances-web
+        state: started
+        enabled: true
+        daemon_reload: true

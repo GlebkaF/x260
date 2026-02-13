@@ -1,0 +1,12 @@
+[Unit]
+Description=Glances web UI (basic server metrics)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/glances -w --bind 0.0.0.0 -p 61208
+Restart=on-failure
+User=gleb
+
+[Install]
+WantedBy=multi-user.target
