@@ -18,6 +18,8 @@ So the “control center” lives in this repo; you operate it **from the server
 | SSH  | `gleb@192.168.0.118` |
 | OS   | Ubuntu Server |
 
+On this server the repo is at **`/opt/x260`** (git clone there; not in home dir).
+
 ## Repo layout
 
 ```
@@ -31,19 +33,10 @@ So the “control center” lives in this repo; you operate it **from the server
 
 ## On the server (after clone)
 
-Install Ansible once (if you use playbooks):
+From `/opt/x260`:
 
-```bash
-sudo apt update && sudo apt install -y ansible
-# or: pip install --user ansible
-```
-
-Run base setup:
-
-```bash
-cd ansible
-ansible-playbook -i inventory/hosts.yml playbooks/base.yml
-```
+- **Ansible** (optional): install once if you use playbooks (`sudo apt install -y ansible`), then run e.g. `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/base.yml` for base setup.
+- **Scripts**: run from `/opt/x260/scripts` as needed.
 
 ## Security (public repo)
 
