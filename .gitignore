@@ -1,0 +1,21 @@
+# Secrets and env
+.env
+.env.*
+!.env.example
+*.pem
+vault-password
+
+# Ansible
+*.retry
+.ansible/
+
+# OS and editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs and local data
+*.log
+logs/
+data/

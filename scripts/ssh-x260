@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# SSH into x260 home server.
+# Usage: ./scripts/ssh-x260 [optional ssh args]
+
+set -e
+exec ssh gleb@192.168.0.118 "$@"

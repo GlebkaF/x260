@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Ping x260 via Ansible (checks SSH and Python).
+# Run from repo root: ./scripts/ping-x260
+
+set -e
+cd "$(dirname "$0")/.."
+ansible -i ansible/inventory/hosts.yml x260 -m ping

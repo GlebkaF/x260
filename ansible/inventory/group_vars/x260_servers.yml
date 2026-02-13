@@ -1,0 +1,12 @@
+# Variables for x260 server(s)
+# Extend as you add services (docker, backup paths, etc.)
+
+# Optional: set timezone
+# timezone: Europe/Moscow
+
+# Optional: list of packages to install on all servers
+# base_packages:
+#   - curl
+#   - htop
+#   - vim
+#   - ufw

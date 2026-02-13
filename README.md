@@ -1,0 +1,59 @@
+# x260 — Home Server Control Center
+
+This repo is the single source of truth for the **x260** home server: config, playbooks, scripts. Workflow: open it in Cursor via **SSH** (connect to the server), edit and run everything from the server. No need to run Ansible or scripts from your local machine.
+
+## Workflow: Cursor over SSH
+
+1. In Cursor: **Remote-SSH** → connect to `gleb@192.168.0.118`.
+2. On the server: clone this repo (or pull), edit, run playbooks/scripts there.
+3. Push/pull from GitHub from the server when you want to sync or backup.
+
+So the “control center” lives in this repo; you operate it **from the server** via Cursor.
+
+## Server
+
+| Item | Value |
+|------|--------|
+| Host | x260 |
+| SSH  | `gleb@192.168.0.118` |
+| OS   | Ubuntu Server |
+
+## Repo layout
+
+```
+.
+├── README.md
+├── LICENSE
+├── ansible/             # Inventory, playbooks (run on server)
+├── scripts/             # Helper scripts (run on server)
+└── docs/                # Notes, runbooks
+```
+
+## On the server (after clone)
+
+Install Ansible once (if you use playbooks):
+
+```bash
+sudo apt update && sudo apt install -y ansible
+# or: pip install --user ansible
+```
+
+Run base setup:
+
+```bash
+cd ansible
+ansible-playbook -i inventory/hosts.yml playbooks/base.yml
+```
+
+## Security (public repo)
+
+This repo is meant to be **public**. Never commit:
+
+- SSH keys, API keys, passwords
+- `.env` with real secrets, `vault-password`, `*.pem`
+
+Use `.env` or Ansible Vault only on the server; keep them out of the repo (`.gitignore` already excludes them).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

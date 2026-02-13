@@ -1,0 +1,37 @@
+---
+# Base setup for x260: system config, user, packages.
+# Run: ansible-playbook -i ../inventory/hosts.yml playbooks/base.yml
+
+- name: Base server setup
+  hosts: x260_servers
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - htop
+          - vim
+          - ufw
+          - ca-certificates
+          - git
+        state: present
+
+    - name: Ensure UFW is installed and allow SSH
+      ansible.builtin.ufw:
+        rule: allow
+        name: OpenSSH
+      when: false  # disable until you're ready; enable to avoid lockout
+
+    # - name: Enable UFW (uncomment when SSH rule is confirmed)
+    #   ansible.builtin.ufw:
+    #     state: enabled
+
+    - name: Set timezone (optional)
+      ansible.builtin.command: timedatectl set-timezone "{{ timezone }}"
+      when: timezone is defined
