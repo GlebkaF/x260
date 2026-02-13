@@ -35,3 +35,16 @@
     - name: Set timezone (optional)
       ansible.builtin.command: timedatectl set-timezone "{{ timezone }}"
       when: timezone is defined
+
+    - name: Ignore lid close (server mode, no suspend on lid close)
+      ansible.builtin.copy:
+        src: logind-lid-ignore.conf
+        dest: /etc/systemd/logind.conf.d/50-lid-ignore.conf
+        mode: "0644"
+      notify: restart logind
+
+  handlers:
+    - name: restart logind
+      ansible.builtin.systemd:
+        name: systemd-logind
+        state: restarted
