@@ -25,26 +25,15 @@ This installs Docker, creates `/opt/pesiki-bot`, downloads the runner package.
 
 ### 2. Create .env (on x260)
 
-Copy from Railway (if you have Railway CLI):
-```bash
-npm i -g @railway/cli
-/opt/x260/scripts/copy-pesiki-env-from-railway.sh
-```
-
-Or manually:
 ```bash
 cp /opt/pesiki-bot/.env.example /opt/pesiki-bot/.env
 # Edit with your tokens: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, etc.
-# (Copy from Railway dashboard → Service → Variables)
+# (Copy from Railway dashboard → Service → Variables, or wherever you keep them)
 ```
 
 ### 3. Register the self-hosted runner
 
-```bash
-/opt/x260/scripts/setup-github-runner.sh
-```
-
-Follow the prompts. Get the token from: **pesiki-bot repo → Settings → Actions → Runners → New self-hosted runner**.
+On x260: go to `/opt/github-runner` (created by the playbook). Get the token from **pesiki-bot repo → Settings → Actions → Runners → New self-hosted runner**, then run `./config.sh --url https://github.com/GlebkaF/pesiki-bot --token <TOKEN> --name x260 --labels x260,linux`. Optionally install the service: `./svc.sh install` and `./svc.sh start`.
 
 ### 4. Add workflow to pesiki-bot repo
 
@@ -74,24 +63,18 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
    - If the server is in a region where OpenAI is blocked: set `HTTPS_PROXY` (e.g. `HTTPS_PROXY=http://proxy:8080`).
    - Optional: `OPENAI_MODEL` (default is `gpt-5.2`; use `gpt-4o-mini` or `gpt-4o` if your provider doesn’t support gpt-5.2).
 
-2. **Test from the server** (sources `/opt/pesiki-bot/.env`):
-   ```bash
-   /opt/x260/scripts/test-copium.sh
-   ```
-   This checks OpenDota (direct) and OpenAI (via `HTTPS_PROXY` if set). If both pass, `/copium` should work.
-
-3. **See the real error** in container logs:
+2. **See the real error** in container logs:
    ```bash
    docker logs pesiki-bot -f
    ```
    Then trigger `/copium` and look for `[ERROR] Failed to handle /copium command` and the stack trace (e.g. API key invalid, timeout, proxy unreachable).
 
-4. **Restart after changing .env**:
+3. **Restart after changing .env**:
    ```bash
    docker restart pesiki-bot
    ```
 
-5. **Timeouts from container but sites open fine on the host** — the container’s network is likely the issue (Docker bridge, DNS, or firewall). Check from inside the container:
+4. **Timeouts from container but sites open fine on the host** — the container’s network is likely the issue (Docker bridge, DNS, or firewall). Check from inside the container:
    ```bash
    docker exec pesiki-bot wget -q -O- --timeout=10 https://api.opendota.com/api/players/92126977/recentMatches | head -c 200
    ```
@@ -108,6 +91,4 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
 | File | Purpose |
 |------|---------|
 | `ansible/playbooks/pesiki-bot.yml` | Docker, /opt/pesiki-bot, runner package |
-| `scripts/setup-github-runner.sh` | One-time runner registration |
-| `scripts/test-copium.sh` | Test OpenDota + OpenAI (for /copium) from server |
 | `docs/pesiki-bot-deploy.yml` | Workflow to copy into pesiki-bot repo |
