@@ -30,7 +30,7 @@ On this server the repo is at **`/opt/x260`** (git clone there; not in home dir)
 ├── LICENSE
 ├── ansible/             # Inventory, playbooks (run on server)
 ├── scripts/             # Helper scripts (run on server)
-└── docs/                # Notes, runbooks
+└── docs/                # Notes, runbooks (incl. pesiki-bot deploy)
 ```
 
 ## On the server (after clone)
@@ -39,6 +39,7 @@ From `/opt/x260`:
 
 - **Ansible** (optional): install once if you use playbooks (`sudo apt install -y ansible`), then run e.g. `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/base.yml` for base setup.
 - **Monitoring:** `playbooks/monitoring.yml` — runs minimal overview server (stdlib only) on :61208. See Monitoring above.
+- **Pesiki-bot:** push to `GlebkaF/pesiki-bot` → auto-deploy on x260. See `docs/pesiki-bot-deploy.md`.
 - **Scripts**: run from `/opt/x260/scripts` as needed.
 
 ## Security (public repo)

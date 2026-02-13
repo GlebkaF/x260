@@ -1,0 +1,34 @@
+---
+# Portainer - Docker web UI (logs, containers, images).
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/portainer.yml
+# Access: http://192.168.0.118:9000 (create admin on first visit)
+
+- name: Deploy Portainer
+  hosts: x260_servers
+  become: true
+  tasks:
+    - name: Check if Portainer exists
+      ansible.builtin.shell: docker ps -a -q -f name=portainer
+      register: portainer_check
+      changed_when: false
+      failed_when: false
+
+    - name: Run Portainer container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name portainer \
+          --restart always \
+          -p 9000:9000 \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v portainer_data:/data \
+          portainer/portainer-ce:latest
+      when: portainer_check.stdout == ""
+
+    - name: Start Portainer if exists but stopped
+      ansible.builtin.command: docker start portainer
+      when: portainer_check.stdout != ""
+      failed_when: false
+
+    - name: Show Portainer URL
+      ansible.builtin.debug:
+        msg: "Portainer: http://192.168.0.118:9000 (create admin on first visit)"

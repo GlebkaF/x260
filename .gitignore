@@ -9,6 +9,10 @@ vault-password
 *.retry
 .ansible/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # OS and editor
 .DS_Store
 *.swp
@@ -19,3 +23,6 @@ vault-password
 *.log
 logs/
 data/
+
+# Cloned repos (used for deploy, not part of x260)
+pesiki-bot/

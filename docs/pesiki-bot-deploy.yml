@@ -1,0 +1,34 @@
+# Copy this file to pesiki-bot repo as .github/workflows/deploy.yml
+# Push to main → deploy on x260 (self-hosted runner)
+
+name: Deploy to x260
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, x260, linux]
+    if: github.repository == 'GlebkaF/pesiki-bot'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t pesiki-bot .
+
+      - name: Stop and remove old container
+        run: |
+          docker stop pesiki-bot 2>/dev/null || true
+          docker rm pesiki-bot 2>/dev/null || true
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name pesiki-bot \
+            --restart unless-stopped \
+            --network host \
+            --env-file /opt/pesiki-bot/.env \
+            -e TZ=Europe/Moscow \
+            pesiki-bot

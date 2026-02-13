@@ -1,0 +1,134 @@
+---
+# Deploy pesiki-bot infrastructure: Docker, runner dir, env template.
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/pesiki-bot.yml
+#
+# One-time: after this playbook, run scripts/setup-github-runner.sh to register
+# the self-hosted runner with the pesiki-bot repo.
+
+- name: Pesiki-bot deployment infrastructure
+  hosts: x260_servers
+  become: true
+  vars:
+    pesiki_bot_dir: /opt/pesiki-bot
+    github_runner_dir: /opt/github-runner
+    github_runner_version: "2.331.0"
+
+  tasks:
+    - name: Install Docker dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Ensure keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+
+    - name: Add Docker apt repository (DEB822 format)
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/docker.sources
+        content: |
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: {{ ansible_distribution_release }}
+          Components: stable
+          Signed-By: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Add {{ ansible_user }} to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+    - name: Create pesiki-bot directory for env and state
+      ansible.builtin.file:
+        path: "{{ pesiki_bot_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Deploy pesiki-bot .env.example
+      ansible.builtin.copy:
+        dest: "{{ pesiki_bot_dir }}/.env.example"
+        content: |
+          # Copy to .env and fill in. Never commit .env.
+          TELEGRAM_BOT_TOKEN=
+          TELEGRAM_CHAT_ID=
+          STEAM_API_KEY=
+          OPENAI_API_KEY=
+          TZ=Europe/Moscow
+          # HTTPS_PROXY=http://host:8080  # for OpenAI (blocked in РФ)
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+
+    - name: Create GitHub runner directory
+      ansible.builtin.file:
+        path: "{{ github_runner_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Download GitHub Actions runner
+      ansible.builtin.get_url:
+        url: "https://github.com/actions/runner/releases/download/v{{ github_runner_version }}/actions-runner-linux-x64-{{ github_runner_version }}.tar.gz"
+        dest: "{{ github_runner_dir }}/actions-runner.tar.gz"
+        mode: "0644"
+      register: runner_download
+
+    - name: Extract GitHub runner (when downloaded)
+      ansible.builtin.unarchive:
+        src: "{{ github_runner_dir }}/actions-runner.tar.gz"
+        dest: "{{ github_runner_dir }}"
+        remote_src: true
+        creates: "{{ github_runner_dir }}/config.sh"
+      when: runner_download.changed
+
+    - name: Fix runner directory ownership
+      ansible.builtin.file:
+        path: "{{ github_runner_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        recurse: true
+
+    - name: Prevent needrestart from stopping runner service (Ubuntu)
+      ansible.builtin.copy:
+        dest: /etc/needrestart/conf.d/actions-runner.conf
+        content: |
+          $nrconf{override_rc}{qr(^actions\.runner\..+\.service$)} = 0;
+        mode: "0644"
+      when: ansible_facts['distribution'] == 'Ubuntu'
+
+  post_tasks:
+    - name: Remind to run runner config
+      ansible.builtin.debug:
+        msg: |
+          Docker and runner package are ready.
+          Next: run scripts/setup-github-runner.sh and follow the prompts.
+          Then add .github/workflows/deploy.yml to pesiki-bot repo (see docs/pesiki-bot-deploy.md).
