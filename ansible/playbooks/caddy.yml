@@ -1,0 +1,48 @@
+---
+# Caddy reverse proxy with optional Let's Encrypt
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/caddy.yml
+#
+# For Let's Encrypt (recommended):
+#   - Set caddy_domain and caddy_email (see below)
+#   - Ensure DNS A record points your domain to the server's public IP (5.130.109.156)
+#   - Ensure ports 80 and 443 are reachable from the internet
+#
+# For IP-only (self-signed cert):
+#   - Leave caddy_domain empty; uses tls internal
+#   - Access: https://5.130.109.156/ (browser will warn about cert)
+
+- name: Deploy Caddy with HTTPS
+  hosts: x260_servers
+  become: true
+  vars:
+    caddy_config_dir: /opt/caddy
+  tasks:
+    - name: Create Caddy config directory
+      ansible.builtin.file:
+        path: "{{ caddy_config_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy Caddyfile
+      ansible.builtin.template:
+        src: Caddyfile.j2
+        dest: "{{ caddy_config_dir }}/Caddyfile"
+        mode: "0644"
+
+    - name: Check if Caddy container exists
+      ansible.builtin.shell: docker ps -a -q -f name=^caddy$
+      register: caddy_check
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure Caddy container is running
+      ansible.builtin.shell: |
+        docker stop caddy 2>/dev/null || true
+        docker rm caddy 2>/dev/null || true
+        docker run -d \
+          --name caddy \
+          --restart unless-stopped \
+          --network host \
+          -v {{ caddy_config_dir }}/Caddyfile:/etc/caddy/Caddyfile:ro \
+          -v caddy_data:/data \
+          caddy:latest

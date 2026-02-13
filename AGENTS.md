@@ -17,6 +17,8 @@ Important context for working on the **x260** home server. Update this file when
 
 **Monitoring:** http://192.168.0.118:61208 (overview: CPU, RAM, disk, load). One-time: `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml`.
 
+**SSH:** Password login is disabled; only key-based auth. Ubuntu’s cloud-init drops `50-cloud-init.conf` with `PasswordAuthentication yes`, so we deploy `00-ssh-key-only.conf` (sshd uses first value). Managed by `base.yml` → `ansible/playbooks/files/00-ssh-key-only.conf`.
+
 ---
 
 ## Repo layout
@@ -91,11 +93,24 @@ docker run -d --name pesiki-bot --restart unless-stopped --network host \
 
 ---
 
+## Caddy (reverse proxy, HTTPS)
+
+- **Playbook:** `playbooks/caddy.yml`
+- **Config:** `ansible/playbooks/templates/Caddyfile.j2` (template), deployed to `/opt/caddy/Caddyfile`
+- **Subdomains:** In `inventory/group_vars/x260_servers.yml` set `caddy_domain` (e.g. `nxrig.com`) and `caddy_sites`:
+  - `subdomain: null` — static files from `/usr/share/caddy`
+  - `subdomain: 9000` — reverse_proxy to `localhost:9000`
+- **DNS:** Add A record for each subdomain (e.g. `x260`, `portainer`) → server's public IP (5.130.109.156). Or wildcard `*` → IP (requires DNS-01 for Let's Encrypt, more complex).
+- **Let's Encrypt:** Set `caddy_email`. Ports 80 and 443 must be reachable from the internet.
+- **IP-only (self-signed):** Leave `caddy_domain` empty; Caddy uses `tls internal`.
+
+---
+
 ## Ansible (quick ref)
 
 - Inventory: `ansible/inventory/hosts.yml`.
 - Run playbook: `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/<name>.yml`.
-- Examples: `base.yml`, `pesiki-bot.yml`, `monitoring.yml`.
+- Examples: `base.yml`, `pesiki-bot.yml`, `caddy.yml`, `monitoring.yml`.
 
 ---
 

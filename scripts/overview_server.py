@@ -238,7 +238,7 @@ def html_page(data):
     let chart = null;
     function fmtTime(ts) {{ return new Date(ts*1000).toLocaleTimeString([], {opts}); }}
     function loadHistory(period) {{
-      fetch('/api/history?period=' + period).then(r => r.json()).then(data => {{
+      fetch('/m-api/history?period=' + period).then(r => r.json()).then(data => {{
         const labels = (data.labels || []).map(fmtTime);
         const datasets = [
           {{ label: 'CPU %', data: data.cpu || [], borderColor: '#58a6ff', tension: 0.2, fill: false }},
@@ -274,7 +274,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             path, qs = self.path.split("?", 1)
         else:
             path, qs = self.path, ""
-        if path == "/api/history":
+        if path in ("/api/history", "/m-api/history"):
             period = 21600
             for part in qs.split("&"):
                 if part.startswith("period="):

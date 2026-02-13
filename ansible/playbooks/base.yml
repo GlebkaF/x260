@@ -43,8 +43,21 @@
         mode: "0644"
       notify: restart logind
 
+    # Override cloud-init's 50-cloud-init.conf (PasswordAuthentication yes); 00-* is read first
+    - name: SSH key-only auth (disable password login)
+      ansible.builtin.copy:
+        src: 00-ssh-key-only.conf
+        dest: /etc/ssh/sshd_config.d/00-ssh-key-only.conf
+        mode: "0644"
+      notify: restart sshd
+
   handlers:
     - name: restart logind
       ansible.builtin.systemd:
         name: systemd-logind
+        state: restarted
+
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: ssh
         state: restarted

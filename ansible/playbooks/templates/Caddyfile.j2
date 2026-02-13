@@ -1,0 +1,64 @@
+# Caddyfile for x260
+# Domain mode: automatic Let's Encrypt. IP mode: tls internal (self-signed).
+# Subdomains: add to caddy_sites in group_vars (subdomain: port or null for static).
+
+{% if caddy_email %}
+{
+    email {{ caddy_email }}
+}
+{% endif %}
+
+{% if caddy_domain %}
+# Subdomains with Let's Encrypt (automatic HTTPS)
+{% for subdomain, port in (caddy_sites | default({}) | dictsort) %}
+{{ subdomain }}.{{ caddy_domain }} {
+{% if port %}
+    reverse_proxy localhost:{{ port }}
+{% else %}
+{% for path, path_port in (caddy_paths | default({}) | dictsort) %}
+    handle_path {{ path }}* {
+        reverse_proxy localhost:{{ path_port }}
+    }
+{% endfor %}
+{% for path, path_port in (caddy_handle_proxies | default({}) | dictsort) %}
+    handle {{ path }}* {
+{% if (caddy_handle_rewrite | default({})).get(path) %}
+        uri replace {{ path }} {{ (caddy_handle_rewrite | default({})).get(path) }}
+{% endif %}
+        reverse_proxy localhost:{{ path_port }}
+    }
+{% endfor %}
+    handle {
+        root * /usr/share/caddy
+        file_server
+    }
+{% endif %}
+
+    log {
+        output stdout
+        format console
+    }
+}
+{% endfor %}
+
+# Redirect HTTP to HTTPS (preserves host)
+:80 {
+    redir https://{host}{uri} permanent
+}
+{% else %}
+# IP-only mode: self-signed cert (Let's Encrypt requires a domain)
+:443 {
+    tls internal
+    root * /usr/share/caddy
+    file_server
+
+    log {
+        output stdout
+        format console
+    }
+}
+
+:80 {
+    redir https://{host}:443{uri} permanent
+}
+{% endif %}

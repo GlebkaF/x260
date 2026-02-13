@@ -10,3 +10,25 @@
 #   - htop
 #   - vim
 #   - ufw
+
+# Caddy (playbooks/caddy.yml)
+# Base domain for subdomains. Each subdomain needs A record in DNS pointing to server's public IP.
+caddy_domain: nxrig.com
+caddy_email: ""  # set your email for Let's Encrypt notifications, e.g. you@nxrig.com
+
+# Subdomains: {subdomain}.nxrig.com -> service
+# - null/omit: static files from /usr/share/caddy
+# - port number: reverse_proxy to localhost:port
+caddy_sites:
+  x260: null          # x260.nxrig.com -> static
+
+# Path proxies on x260: x260.nxrig.com/path -> localhost:port
+# - caddy_paths: strip prefix (e.g. /m -> /)
+# - caddy_handle_proxies: proxy path as-is (or with rewrite)
+# - caddy_handle_rewrite: path -> backend path (e.g. /m-api -> /api)
+caddy_paths:
+  /m: 61208           # x260.nxrig.com/m -> monitoring
+caddy_handle_proxies:
+  /m-api: 61208       # x260.nxrig.com/m-api -> monitoring (for chart data)
+caddy_handle_rewrite:
+  /m-api: /api        # rewrite /m-api/* to /api/* for backend
