@@ -22,7 +22,7 @@ Important context for working on the **x260** home server. Update this file when
 ## Repo layout
 
 - `ansible/` — inventory, playbooks (base, pesiki-bot, monitoring, etc.)
-- `scripts/` — helper scripts (test-copium, setup-github-runner, copy-pesiki-env-from-railway, etc.)
+- `scripts/` — helper scripts (e.g. overview server for monitoring)
 - `docs/` — runbooks and notes (e.g. pesiki-bot deploy)
 
 Never commit secrets (API keys, `.env`, vault passwords). IP above is private (RFC 1918).
@@ -51,10 +51,10 @@ Workflow template in this repo: `docs/pesiki-bot-deploy.yml` (copy into pesiki-b
 ### Env (on server)
 
 - **Required:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`; for /copium and /analyze: `OPENAI_API_KEY`.
-- **Proxy:** If OpenAI/OpenDota are unreachable from the host, set `HTTPS_PROXY` (e.g. `http://proxy:8080`). When set, **all** outbound HTTP (OpenAI, OpenDota, heroes, items, Steam) goes through the proxy (see `pesiki-bot/src/proxy.ts` and `getAppFetch()`).
+- **Proxy:** If OpenAI/OpenDota are unreachable from the host, set `HTTPS_PROXY` (e.g. `http://proxy:8080`). When set, **proxied** requests (OpenAI, OpenDota, heroes, items) go through the proxy. **Steam (LFG)** always uses **direct** fetch (no proxy) to avoid proxy 502; see `pesiki-bot/src/proxy.ts` (`getProxiedFetch` vs `getDirectFetch`).
 - **Optional:** `OPENAI_MODEL` (default `gpt-5.2`), `OPENAI_BASE_URL` (for proxy APIs).
 
-Create `.env`: copy from Railway with `scripts/copy-pesiki-env-from-railway.sh`, or `cp /opt/pesiki-bot/.env.example /opt/pesiki-bot/.env` and edit.
+Create `.env`: copy vars from Railway dashboard (or elsewhere), or `cp /opt/pesiki-bot/.env.example /opt/pesiki-bot/.env` and edit.
 
 ### Commands (on x260)
 
@@ -75,15 +75,18 @@ docker run -d --name pesiki-bot --restart unless-stopped --network host \
 
 - **/yesterday** uses only OpenDota. **/copium** and **/analyze** use OpenDota + OpenAI (and heroes/items APIs). If /copium fails:
   1. **Env:** Check `OPENAI_API_KEY` and, if needed, `HTTPS_PROXY` in `/opt/pesiki-bot/.env`.
-  2. **Test from server:** `/opt/x260/scripts/test-copium.sh` (sources `/opt/pesiki-bot/.env`). Checks OpenDota and OpenAI (via proxy if set).
-  3. **Real error:** `docker logs pesiki-bot -f`, then trigger /copium; look for `[ERROR] Failed to handle /copium command` and stack trace.
-  4. **Container network:** If host can reach APIs but container times out, the deploy already uses `--network host`. If it didn’t, run the container with `--network host` (see “Manual full redeploy” above).
-  5. After any `.env` change: `docker restart pesiki-bot`.
+  2. **Real error:** `docker logs pesiki-bot -f`, then trigger /copium; look for `[ERROR] Failed to handle /copium command` and stack trace.
+  3. **Container network:** If host can reach APIs but container times out, the deploy already uses `--network host`. If it didn’t, run the container with `--network host` (see “Manual full redeploy” above).
+  4. After any `.env` change: `docker restart pesiki-bot`.
+
+### Troubleshooting LFG (Steam)
+
+- Steam (LFG) uses **direct** fetch (no proxy). If the host cannot reach api.steampowered.com directly, you’d need to change `steam.ts` to use `getProxiedFetch()` instead of `getDirectFetch()`. The bot retries Steam requests up to 3 times on 502/network errors.
 
 ### One-time setup (if not done)
 
 - **Infra:** `cd /opt/x260/ansible && ansible-playbook -i inventory/hosts.yml playbooks/pesiki-bot.yml` (Docker, `/opt/pesiki-bot`, runner package).
-- **Runner:** `/opt/x260/scripts/setup-github-runner.sh` (register self-hosted runner for GlebkaF/pesiki-bot).
+- **Runner:** One-off: in GlebkaF/pesiki-bot → Settings → Actions → Runners add self-hosted runner, then on x260 run the runner config from `/opt/github-runner` (created by pesiki-bot.yml).
 - **Workflow:** Ensure pesiki-bot repo has `.github/workflows/deploy.yml` (content from `docs/pesiki-bot-deploy.yml`).
 
 ---
