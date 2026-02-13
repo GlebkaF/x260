@@ -1,25 +1,25 @@
 ---
-# Glances: lightweight web UI for basic server metrics (CPU, RAM, disk, network).
+# Minimal overview dashboard: one page with CPU, RAM, disk, load. No heavy deps.
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/monitoring.yml
 
-- name: Glances monitoring
+- name: Overview dashboard
   hosts: x260_servers
   become: true
   tasks:
-    - name: Install Glances
-      ansible.builtin.apt:
-        name: glances
-        state: present
+    - name: Ensure overview script is executable
+      ansible.builtin.file:
+        path: /opt/x260/scripts/overview_server.py
+        mode: "0755"
 
-    - name: Deploy Glances web systemd unit
+    - name: Deploy overview server systemd unit
       ansible.builtin.copy:
-        src: glances-web.service
-        dest: /etc/systemd/system/glances-web.service
+        src: overview-server.service
+        dest: /etc/systemd/system/overview-server.service
         mode: "0644"
 
-    - name: Enable and start Glances web
+    - name: Enable and start overview server
       ansible.builtin.systemd:
-        name: glances-web
+        name: overview-server
         state: started
         enabled: true
         daemon_reload: true

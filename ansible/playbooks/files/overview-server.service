@@ -1,0 +1,13 @@
+[Unit]
+Description=Minimal overview dashboard (CPU, RAM, disk, load)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/x260/scripts/overview_server.py
+Restart=on-failure
+User=gleb
+WorkingDirectory=/opt/x260
+
+[Install]
+WantedBy=multi-user.target
