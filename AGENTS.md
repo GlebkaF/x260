@@ -46,7 +46,7 @@ So: “pesiki-bot repo” = app code at `/opt/x260/pesiki-bot`; “pesiki-bot on
 
 1. Push to `main` of **GlebkaF/pesiki-bot** (from `/opt/x260/pesiki-bot` or any clone).
 2. GitHub Actions dispatches the job to the **self-hosted runner on x260** (x260 is in a private network; cloud runners cannot reach it).
-3. Runner: `docker build -t pesiki-bot .` then stop/rm old container and `docker run` with `--env-file /opt/pesiki-bot/.env`, `--network host`, `TZ=Europe/Moscow`.
+3. Runner: `docker compose up -d --build` (from pesiki-bot repo checkout). Compose uses `env_file: /opt/pesiki-bot/.env`, `network_mode: host`, `TZ=Europe/Moscow`.
 
 Workflow template in this repo: `docs/pesiki-bot-deploy.yml` (copy into pesiki-bot repo as `.github/workflows/deploy.yml` if setting up from scratch).
 
@@ -68,9 +68,7 @@ docker logs pesiki-bot -f
 docker restart pesiki-bot
 
 # Manual full redeploy (same as workflow does)
-docker stop pesiki-bot 2>/dev/null; docker rm pesiki-bot 2>/dev/null
-docker run -d --name pesiki-bot --restart unless-stopped --network host \
-  --env-file /opt/pesiki-bot/.env -e TZ=Europe/Moscow pesiki-bot
+cd /opt/x260/pesiki-bot && docker compose up -d --build
 ```
 
 ### Troubleshooting /copium (and /analyze)

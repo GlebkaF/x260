@@ -5,7 +5,7 @@ Push to `GlebkaF/pesiki-bot` → auto-deploy on x260. Uses a **self-hosted GitHu
 ## Architecture
 
 ```
-[GitHub] ← push → [GitHub Actions] → job dispatched to → [x260 runner] → docker build & run
+[GitHub] ← push → [GitHub Actions] → job dispatched to → [x260 runner] → docker compose up -d --build
 ```
 
 The runner on x260 connects outbound to GitHub. When you push, GitHub sends the job to the runner; the runner builds and runs the bot locally.
@@ -40,7 +40,6 @@ On x260: go to `/opt/github-runner` (created by the playbook). Get the token fro
 Copy `docs/pesiki-bot-deploy.yml` to the pesiki-bot repo:
 
 ```bash
-# From your local machine (or from x260 if you have the repo cloned)
 mkdir -p pesiki-bot/.github/workflows
 cp /opt/x260/docs/pesiki-bot-deploy.yml pesiki-bot/.github/workflows/deploy.yml
 cd pesiki-bot && git add .github/workflows/deploy.yml && git commit -m "Add deploy workflow for x260" && git push
@@ -50,9 +49,10 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
 
 ## After setup
 
-- **Push to `main`** → workflow runs on x260 → bot is rebuilt and restarted.
+- **Push to `main`** → workflow runs on x260 → bot is rebuilt and restarted via `docker compose up -d --build`.
 - **Logs**: `docker logs pesiki-bot -f`
 - **Manual restart**: `docker restart pesiki-bot`
+- **Manual full redeploy**: `cd /opt/x260/pesiki-bot && docker compose up -d --build`
 
 ## Troubleshooting /copium
 
@@ -78,13 +78,7 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
    ```bash
    docker exec pesiki-bot wget -q -O- --timeout=10 https://api.opendota.com/api/players/92126977/recentMatches | head -c 200
    ```
-   If this hangs or fails, run the bot with the host network so it uses the same network as the host:
-   ```bash
-   docker stop pesiki-bot && docker rm pesiki-bot
-   docker run -d --name pesiki-bot --restart unless-stopped --network host \
-     --env-file /opt/pesiki-bot/.env -e TZ=Europe/Moscow pesiki-bot
-   ```
-   (Add `--network host` to the workflow’s `docker run` in the pesiki-bot repo if you keep this fix.)
+   If this hangs or fails, the deploy already uses `network_mode: host` in `docker-compose.yml`. Ensure you're on the latest version.
 
 ## Files reference
 
@@ -92,3 +86,4 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
 |------|---------|
 | `ansible/playbooks/pesiki-bot.yml` | Docker, /opt/pesiki-bot, runner package |
 | `docs/pesiki-bot-deploy.yml` | Workflow to copy into pesiki-bot repo |
+| `pesiki-bot/docker-compose.yml` | Compose config (in pesiki-bot repo) |
