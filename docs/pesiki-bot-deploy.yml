@@ -20,3 +20,10 @@ jobs:
 
       - name: Build and run with docker compose
         run: docker compose up -d --build
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
+          NO_PROXY: ${{ secrets.NO_PROXY }}

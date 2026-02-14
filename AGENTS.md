@@ -46,17 +46,16 @@ So: “pesiki-bot repo” = app code at `/opt/x260/pesiki-bot`; “pesiki-bot on
 
 1. Push to `main` of **GlebkaF/pesiki-bot** (from `/opt/x260/pesiki-bot` or any clone).
 2. GitHub Actions dispatches the job to the **self-hosted runner on x260** (x260 is in a private network; cloud runners cannot reach it).
-3. Runner: `docker compose up -d --build` (from pesiki-bot repo checkout). Compose uses `env_file: /opt/pesiki-bot/.env`, `network_mode: host`, `TZ=Europe/Moscow`.
+3. Runner: `docker compose up -d --build` with env from **GitHub Secrets** (passed directly to container). `network_mode: host`, `TZ=Europe/Moscow`.
 
 Workflow template in this repo: `docs/pesiki-bot-deploy.yml` (copy into pesiki-bot repo as `.github/workflows/deploy.yml` if setting up from scratch).
 
-### Env (on server)
+### Env (GitHub Secrets)
 
-- **Required:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`; for /copium and /analyze: `OPENAI_API_KEY`.
-- **Proxy:** If OpenAI/OpenDota are unreachable from the host, set `HTTPS_PROXY` (e.g. `http://proxy:8080`). When set, **proxied** requests (OpenAI, OpenDota, heroes, items) go through the proxy. **Steam (LFG)** always uses **direct** fetch (no proxy) to avoid proxy 502; see `pesiki-bot/src/proxy.ts` (`getProxiedFetch` vs `getDirectFetch`).
-- **Optional:** `OPENAI_MODEL` (default `gpt-5.2`), `OPENAI_BASE_URL` (for proxy APIs).
+Secrets live in **GitHub → Settings → Secrets and variables → Actions**. Required: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `STEAM_API_KEY`, `OPENAI_API_KEY`. Optional: `HTTPS_PROXY`, `NO_PROXY`. Passed directly to the container, no `.env` file.
 
-Create `.env`: copy vars from Railway dashboard (or elsewhere), or `cp /opt/pesiki-bot/.env.example /opt/pesiki-bot/.env` and edit.
+- **Proxy:** If OpenAI/OpenDota are unreachable, set `HTTPS_PROXY`. **Steam (LFG)** uses direct fetch (no proxy); see `pesiki-bot/src/proxy.ts`.
+- **Optional:** `OPENAI_MODEL`, `OPENAI_BASE_URL` (add to workflow if needed).
 
 ### Commands (on x260)
 
@@ -67,7 +66,7 @@ docker logs pesiki-bot -f
 # Restart (e.g. after .env change)
 docker restart pesiki-bot
 
-# Manual full redeploy (same as workflow does)
+# Manual full redeploy (export vars first, or push to trigger CI)
 cd /opt/x260/pesiki-bot && docker compose up -d --build
 ```
 

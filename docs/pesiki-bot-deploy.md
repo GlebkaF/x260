@@ -23,13 +23,20 @@ This installs Docker, creates `/opt/pesiki-bot`, downloads the runner package.
 
 **Note:** After the playbook, you may need to log out and back in (or run `newgrp docker`) so your user gets the docker group.
 
-### 2. Create .env (on x260)
+### 2. Add GitHub Secrets
 
-```bash
-cp /opt/pesiki-bot/.env.example /opt/pesiki-bot/.env
-# Edit with your tokens: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, etc.
-# (Copy from Railway dashboard → Service → Variables, or wherever you keep them)
-```
+Go to **pesiki-bot repo → Settings → Secrets and variables → Actions**. Add repository secrets:
+
+| Secret | Required |
+|--------|----------|
+| `TELEGRAM_BOT_TOKEN` | yes |
+| `TELEGRAM_CHAT_ID` | yes |
+| `STEAM_API_KEY` | yes |
+| `OPENAI_API_KEY` | yes (for /copium, /analyze) |
+| `HTTPS_PROXY` | no (if OpenAI blocked in your region) |
+| `NO_PROXY` | no (comma-separated hosts to bypass proxy) |
+
+Secrets are passed directly to the container via env. No `.env` file on disk.
 
 ### 3. Register the self-hosted runner
 
@@ -58,7 +65,7 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
 
 `/yesterday` uses only OpenDota API. **`/copium`** (and `/analyze`) also call **OpenAI**. If `/copium` fails but `/yesterday` works:
 
-1. **Check env on the server** — in `/opt/pesiki-bot/.env`:
+1. **Check env** — secrets in GitHub (Settings → Secrets) or `/opt/pesiki-bot/.env` (written by workflow):
    - `OPENAI_API_KEY` must be set (get from OpenAI or from a proxy service like AITUNNEL/ProxyAPI, see `.env.example`).
    - If the server is in a region where OpenAI is blocked: set `HTTPS_PROXY` (e.g. `HTTPS_PROXY=http://proxy:8080`).
    - Optional: `OPENAI_MODEL` (default is `gpt-5.2`; use `gpt-4o-mini` or `gpt-4o` if your provider doesn’t support gpt-5.2).
@@ -69,10 +76,7 @@ Or create `pesiki-bot/.github/workflows/deploy.yml` manually with the content fr
    ```
    Then trigger `/copium` and look for `[ERROR] Failed to handle /copium command` and the stack trace (e.g. API key invalid, timeout, proxy unreachable).
 
-3. **Restart after changing .env**:
-   ```bash
-   docker restart pesiki-bot
-   ```
+3. **Restart after changing secrets**: update the secret in GitHub, push to trigger redeploy, or `docker restart pesiki-bot` after manually editing `/opt/pesiki-bot/.env`.
 
 4. **Timeouts from container but sites open fine on the host** — the container’s network is likely the issue (Docker bridge, DNS, or firewall). Check from inside the container:
    ```bash
